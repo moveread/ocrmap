@@ -20,7 +20,7 @@ We'll use these to both generate fake OCR noise and map real OCR outputs to word
 - *Chess Transformer Vocabulary* $V_T$: all legal SANs, with a few common styles and translations
 - *OCR Output Vocabulary* $V_O$: all possible sequences of characters, numbers, and the hyphen ('-')
 - *Known OCR Predictions Vocabulary* $V_P$: set of OCR predictions generated over our OCR dataset
-- *Known OCR Labels Vocabulary* $V_L$: set of words from $V_T$ that also appear in our OCR dataset (and thus have some OCR predictions associated) ($V_L\sube V_T$)
+- *Known OCR Labels Vocabulary* $V_L$: set of words from $V_T$ that also appear in our OCR dataset (and thus have some OCR predictions associated) ($V_L\subseteq V_T$)
 
 # 2. Estimating Probabilities
 
@@ -91,7 +91,7 @@ Not bad!
 
 With $P_\text{ocr}(l∣p)$, we can map OCR predictions $p\in V_P$ to the input vocabulary $V_T$. Similarly, with $P_\text{ocr}(p∣l)$ we can generate OCR-like noise in $V_L$.
 
-However, $V_P\sub  V_O$ (and will always be, since $V_O$ is infinite, and we can only have a finite number of words in our dataset $V_P$) and $V_L \sube V_T$ (though the gap may significantly close as we collect more data).
+However, $V_P\subset  V_O$ (and will always be, since $V_O$ is infinite, and we can only have a finite number of words in our dataset $V_P$) and $V_L \subseteq V_T$ (though the gap may significantly close as we collect more data).
 
 Thus, we need an alternative way to define $P_\text{ocr}$ over $V_O$ and $V_T$.
 
