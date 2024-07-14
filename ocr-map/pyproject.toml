@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ocr-map"
+version = "0.1.3"
+authors = [
+  {name="Marcel Claramunt", email="marcel@moveread.com"}
+]
+description = "Mapping OCR predictions to fixed-size vocabularies"
+dependencies = []
+requires-python = ">=3.10"
+readme = {file="README.md", content-type="text/markdown"}
+
+[project.urls]
+repo = "https://github.com/moveread/REPO.git"
+
+[project.scripts]
+ocrmap = "ocr_map.cli:app"
+
+[project.optional-dependencies]
+cli = ["typer"]
