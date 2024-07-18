@@ -1,11 +1,12 @@
-from typing import Mapping, Iterable, Sequence, Callable
+from typing_extensions import Mapping, Iterable, Callable, TypedDict, Unpack, NotRequired
 from collections import Counter
 from dataclasses import dataclass
 import ocr_map as om
 
-def sample(distribution: Counter):
-  import random
-  return random.choices(list(distribution.keys()), weights=distribution.values())[0] # type: ignore
+class Params(TypedDict):
+  alpha: NotRequired[int]
+  k: NotRequired[int]
+  edit_distance: NotRequired[Callable[[str, str], float] | None]
 
 @dataclass
 class LikelihoodMixin:
@@ -17,23 +18,12 @@ class LikelihoodMixin:
     """Set of labels in the training samples"""
     return set(self.Pocr.keys())
   
-  def likelihood(
-    self, label: str, *, alpha: int = 10, k: int = 25,
-    edit_distance: Callable[[str, str], float] | None = None  
-  ) -> Counter[str]:
-    """Generalize the trained distribution to any `label`"""
-    return om.generalize_distrib(label, self.Pocr, alpha=alpha, k=k, edit_distance=edit_distance)
-
-  def simulate(
-    self, word: str, *, alpha: int = 10, k: int = 25,
-    edit_distance: Callable[[str, str], float] | None = None
-  ) -> str:
-    """Simulate OCR noise for any given word
-    - `alpha`: scaling factor for similarity (higher `alpha`s make the results closer to the original `word`)
+  def likelihood(self, label: str, **params: Unpack[Params]) -> Counter[str]:
+    """Generalize the trained distribution to any `label`.
+    - `alpha`: scaling factor for similarity (higher `alpha`s make the results closer to the original `label`)
     - `k`: number of similar words to consider
     """
-    return sample(self.likelihood(word, alpha=alpha, k=k, edit_distance=edit_distance))
-
+    return om.generalize_distrib(label, self.Pocr, **params)
 
 class Likelihood(LikelihoodMixin):
   """Distribution of OCR errors (from True Labels to OCR Predictions, aka the likelihood of labels given OCR predictions)"""
@@ -47,19 +37,17 @@ class PosteriorMixin:
   Pl: Counter[str]
   Pocr_post: Mapping[str, Counter[str]]
 
-  def posterior(
-    self, ocrpred: str, *, alpha: int = 10, k: int = 25,
-    edit_distance: Callable[[str, str], float] | None = None
-  ) -> Counter[str]:
+  def posterior(self, ocrpred: str, **params: Unpack[Params]) -> Counter[str]:
     """Generalize the trained posterior distribution to any `ocrpred`"""
-    return om.generalize_distrib(ocrpred, self.Pocr_post, alpha=alpha, k=k, edit_distance=edit_distance)
+    return om.generalize_distrib(ocrpred, self.Pocr_post, **params)
   
-  def denoise(
-    self, ocrpred: str, *, alpha: int = 10, k: int = 25,
-    edit_distance: Callable[[str, str], float] | None = None
-  ) -> str:
-    """Denoise any OCR prediction `ocrpred`"""
-    return self.posterior(ocrpred, alpha=alpha, k=k, edit_distance=edit_distance).most_common(1)[0][0]
+  def denoise(self, ocrpreds: Iterable[tuple[str, float]], **params: Unpack[Params]) -> Counter[str]:
+    """Denoise an entire OCR distribution"""
+    out: dict[str, float] = Counter() # type: ignore
+    for w, p in ocrpreds:
+      for w2, p2 in self.posterior(w, **params).most_common(params.get('k', 25)):
+        out[w2] += p * p2 
+    return out # type: ignore
   
 class Posterior(PosteriorMixin):
   """Posterior distribution of OCR errors (from OCR Predictions to True Labels, based on the prior distribution of labels)"""
@@ -72,11 +60,14 @@ class Posterior(PosteriorMixin):
   
 @dataclass
 class Model(LikelihoodMixin, PosteriorMixin):
+
   @staticmethod
-  def fit(samples: Sequence[om.Sample]) -> 'Model':
+  def fit(samples: Iterable[om.Sample]) -> 'Model':
     """Fit the model to a set of samples"""
-    Pocr = om.Pocr(samples)
-    Pl = om.Pl(l for l, _ in samples)
+    from itertools import tee
+    s1, s2 = tee(samples)
+    Pocr = om.Pocr(s1)
+    Pl = om.Pl(l for l, _ in s2)
     Pocr_post = om.Pocr_posterior(Pocr, Pl)
     return Model(Pocr=Pocr, Pl=Pl, Pocr_post=Pocr_post)
   
@@ -94,3 +85,14 @@ class Model(LikelihoodMixin, PosteriorMixin):
     import pickle
     with open(path, 'wb') as f:
       pickle.dump(self, f)
+
+
+  def simulate(self, label: str, **params: Unpack[Params]) -> Counter[str]:
+    """Simulate the OCR distribution, then denoise it. (simulates the result of denoising OCR preds)"""
+    k = params.get('k') or 25
+    likelihood = self.likelihood(label, **params)
+    out = Counter()
+    for w, p in likelihood.most_common(k):
+      for w2, p2 in self.posterior(w, **params).most_common(k):
+        out[w2] += p * p2
+    return out

@@ -1,11 +1,11 @@
 from typing import Iterable, Mapping, Callable
 from collections import Counter
-import numpy as np
+import math
 from editdistance import eval as ed
 
 def sim(a: str, b: str, *, alpha = 10, ed = ed):
-  ned = ed(a, b) / max(len(a), len(b))
-  return np.exp(-alpha * ned)
+  ned = ed(a, b) / max(len(a), len(b), 1) # just in case
+  return math.exp(-alpha * ned)
 
 def Psim(p: str, Vp: Iterable[str], *, alpha = 10, ed = ed) -> Counter[str]:
   """Computes `Psim^p (w)` over all `w in Vp`

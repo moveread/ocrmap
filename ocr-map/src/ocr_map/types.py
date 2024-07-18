@@ -1,6 +1,8 @@
-from typing import TypeAlias, Sequence
+from typing import NamedTuple, Sequence
 
-TopPreds: TypeAlias = Sequence[tuple[str, float]]
+TopPreds = Sequence[tuple[str, float]]
 """Top predictions `(word, prob)`, sorted by decreasing probability."""
-Sample: TypeAlias = tuple[str, TopPreds]
-"""`(label, top_preds)`"""
+
+class Sample(NamedTuple):
+  label: str
+  top_preds: TopPreds

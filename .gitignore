@@ -4,4 +4,9 @@ node_modules
 __pycache__
 *.egg-info/
 *.py[cod]
-dist
+dist.venv
+.vscode
+node_modules
+__pycache__
+*.egg-info/
+*.py[cod]
