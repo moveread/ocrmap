@@ -1,5 +1,26 @@
 # OCR ↔ Vocabulary
 
+# Usage
+
+**CLI**
+```bash
+cat ocrpreds.ndjson | ocrmap fit model.pkl
+cat labels.txt | ocrmap simulate --model model.pkl > fakepreds.ndjson
+cat ocrpreds.ndjson | ocrmap denoise -m model.pkl > label-distribs.ndjson
+```
+
+**Python**
+```python
+from ocrmap import Model
+
+model = Model.fit(samples)
+# or
+model = Model.unpickle('model.pkl')
+
+model.posterior('ee4') # Counter({ 'ed4': 0.7, 'e4': 0.1, ... })
+model.denoise({ 'ee4': 0.7, 'e4': 0.1, ... }) # Counter({ 'ed4': 0.65, 'e4': 0.15, ... })
+```
+
 # 0. Abstract
 
 The Chess Transformer has a word-level vocabulary, consisting of all legal SANs plus some common styles and languages. However, the OCR output vocabulary is character-level. Here, we tackle some of the problems thus created:
