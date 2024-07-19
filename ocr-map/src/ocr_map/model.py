@@ -2,15 +2,16 @@ from typing_extensions import Mapping, Iterable, Callable, TypedDict, Unpack, No
   Generic, TypeVar, ParamSpec
 from collections import Counter
 from dataclasses import dataclass
+from functools import cached_property
 import ocr_map as om
 
 Ps = ParamSpec('Ps')
 T = TypeVar('T')
 
 class cache(Generic[Ps, T]):
-  def __init__(self, func: Callable[Ps, T], cache = {}):
+  def __init__(self, func: Callable[Ps, T], cache = None):
     self.func = func
-    self.cache = cache
+    self.cache = cache or {}
 
   def __call__(self, *args: Ps.args, **kwargs: Ps.kwargs) -> T:
     key = (args, frozenset(kwargs.items()))
@@ -22,7 +23,7 @@ class cache(Generic[Ps, T]):
     return self.__class__(self.func.__get__(obj, objtype), self.cache)
 
 class Params(TypedDict):
-  alpha: NotRequired[int]
+  alpha: NotRequired[float]
   k: NotRequired[int]
   edit_distance: NotRequired[Callable[[str, str], float] | None]
 
@@ -31,7 +32,7 @@ class LikelihoodMixin:
 
   Pocr: Mapping[str, Counter[str]]
 
-  @property
+  @cached_property
   def labels(self) -> set[str]:
     """Set of labels in the training samples"""
     return set(self.Pocr.keys())
@@ -130,11 +131,11 @@ class Model(LikelihoodMixin, PosteriorMixin):
     if not hasattr(self.likelihood, 'cache'):
       self.cache()
   
-  def __getstate__(self) -> object:
-    return self.Pocr, self.Pl, self.Pocr_post, self.likelihood.cache, self.posterior.cache, self.simulate.cache
+  def __getstate__(self):
+    return self.Pocr, self.Pl, self.Pocr_post, self.likelihood.cache, self.posterior.cache, self.simulate.cache # type: ignore
   
-  def __setstate__(self, state: object):
+  def __setstate__(self, state):
     self.Pocr, self.Pl, self.Pocr_post, *rest = state
     if len(rest) == 3:
       self.cache()
-      self.likelihood.cache, self.posterior.cache, self.simulate.cache = rest
+      self.likelihood.cache, self.posterior.cache, self.simulate.cache = rest # type: ignore

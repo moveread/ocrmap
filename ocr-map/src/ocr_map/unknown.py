@@ -3,11 +3,11 @@ from collections import Counter
 import math
 from editdistance import eval as ed
 
-def sim(a: str, b: str, *, alpha = 10, ed = ed):
+def sim(a: str, b: str, *, alpha: float = 10, ed = ed):
   ned = ed(a, b) / max(len(a), len(b), 1) # just in case
   return math.exp(-alpha * ned)
 
-def Psim(p: str, Vp: Iterable[str], *, alpha = 10, ed = ed) -> Counter[str]:
+def Psim(p: str, Vp: Iterable[str], *, alpha: float = 10, ed = ed) -> Counter[str]:
   """Computes `Psim^p (w)` over all `w in Vp`
   - `p`: possibly out-of-vocabulary word to test
   - `Vp`: vocabulary to test against
@@ -21,7 +21,7 @@ def Psim(p: str, Vp: Iterable[str], *, alpha = 10, ed = ed) -> Counter[str]:
 
 def generalize_distrib(
   w: str, P: Mapping[str, Counter[str]], *,
-  alpha: int = 10, k: int = 25,
+  alpha: float = 10, k: int = 25,
   edit_distance: Callable[[str, str], float] | None = None
 ):
   """Generalizes `P(w)` given `P`, by finding similar words to `w` in the vocabulary of `P`
