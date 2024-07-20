@@ -7,6 +7,7 @@
 cat ocrpreds.ndjson | ocrmap fit model.pkl
 cat labels.txt | ocrmap simulate --model model.pkl > fakepreds.ndjson
 cat ocrpreds.ndjson | ocrmap denoise -m model.pkl > label-distribs.ndjson
+ocrmap cache -m model.pkl -o cached-model.pkl
 ```
 
 **Python**
